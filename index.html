@@ -147,12 +147,12 @@
       controlLayers.addBaseLayer(light, 'Swiss OSM Carto');
 
       /* Stamen colored terrain basemap tiles with labels */
-      var terrain = L.tileLayer('https://api.maptiler.com/maps/bright-v2/{z}/{x}/{y}.png?key=62fWxjuKZdoP6vlFjq0a', {
+      var terrain = L.tileLayer('https://api.maptiler.com/maps/bright-v2/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a', {
         attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
       }); // EDIT - insert or remove ".addTo(map)" before last semicolon to display by default
       controlLayers.addBaseLayer(terrain, 'OSM Bright');
 
-      var terrain = L.tileLayer('https://api.maptiler.com/maps/ch-swisstopo-lbm/{z}/{x}/{y}.png?key=62fWxjuKZdoP6vlFjq0a', {
+      var terrain = L.tileLayer('https://api.maptiler.com/maps/ch-swisstopo-lbm/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a', {
         attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a> © swisstopo <a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a> <a href="https://www.swisstopo.admin.ch/en/home.html" target="_blank">&copy; swisstopo</a>'
       }); // EDIT - insert or remove ".addTo(map)" before last semicolon to display by default
       controlLayers.addBaseLayer(terrain, 'Swisstopo Light Basemap');
