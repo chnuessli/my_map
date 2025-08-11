@@ -4,10 +4,8 @@ const form = document.getElementById("search-form");
 const input = document.getElementById("search-input");
 const locateBtn = document.getElementById("locate-btn");
 
-// Karte anlegen (ohne Basiskarte – die kommt über baseLayers)
 const map = L.map("map", { zoomControl: true, center: [47.3769, 8.5417], zoom: 12 });
 
-// Helper zum Erstellen von Tile-Layern (mit Retina-Defaults für @2x)
 function tl(url, opts = {}) {
   const retina = url.includes("@2x");
   return L.tileLayer(url, {
@@ -20,62 +18,49 @@ function tl(url, opts = {}) {
   });
 }
 
-// Basiskarten definieren
 const baseLayers = {
   "OSM Standard": tl("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }),
-
-  // MapTiler Bright (URL wie bei dir)
   "OSM Bright": tl(
     "https://api.maptiler.com/maps/bright-v2/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
       attribution:
         '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }
   ),
-
-  // MapTiler SwissTopo Light (URL wie bei dir)
   "Swisstopo light": tl(
     "https://api.maptiler.com/maps/ch-swisstopo-lbm/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
       attribution:
         '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a> ' +
-        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
     }
   ),
-
   "OpenTopoMap": tl("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
     maxZoom: 17,
     attribution:
-      'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
-      'SRTM | Map style &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+      'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }),
 };
 
-// Zuletzt verwendete Basiskarte merken
 const LS_KEY = "my-map-baselayer";
 const savedBase = localStorage.getItem(LS_KEY);
 const initialBaseName =
   savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
 baseLayers[initialBaseName].addTo(map);
 
-// Wechsel speichern
 map.on("baselayerchange", (e) => {
   localStorage.setItem(LS_KEY, e.name);
-  statusEl.textContent = ""; // alte Tile-Fehlermeldung zurücksetzen
+  statusEl.textContent = "";
 });
 
-// Marker-Layer
 const markers = L.markerClusterGroup ? L.markerClusterGroup() : L.layerGroup();
 map.addLayer(markers);
 
-// Layer-Control hinzufügen (mobil eingeklappt)
-// Hinweis: Abstände werden rein per CSS gesteuert (kein JS-Offset mehr nötig)
 const isMobile = matchMedia("(max-width: 768px)").matches;
 L.control.layers(
   baseLayers,
@@ -83,20 +68,16 @@ L.control.layers(
   { position: "topright", collapsed: isMobile }
 ).addTo(map);
 
-// Maßstab hinzufügen
 L.control.scale({ imperial: false }).addTo(map);
 
-// Status-Helfer
 const setStatus = (msg) => (statusEl.textContent = msg || "");
 
-// Debounce-Funktion
 let debounceTimer;
 const debounce = (fn, ms = 350) => (...args) => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => fn(...args), ms);
 };
 
-// Suche (Nominatim)
 async function searchPlaces(query) {
   if (!query) return;
   setStatus("Suche läuft …");
@@ -123,13 +104,11 @@ async function searchPlaces(query) {
     const first = data[0];
     map.flyTo([parseFloat(first.lat), parseFloat(first.lon)], 14, { duration: 0.8 });
     setStatus(`${data.length} Treffer.`);
-  } catch (e) {
+  } catch {
     setStatus("Fehler bei der Suche.");
-    console.error(e);
   }
 }
 
-// Formular-Events
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   searchPlaces(input.value.trim());
@@ -142,7 +121,6 @@ input.addEventListener(
   }, 500)
 );
 
-// Geolocation
 locateBtn.addEventListener("click", () => {
   if (!navigator.geolocation) return setStatus("Geolokalisierung nicht verfügbar.");
   setStatus("Bestimme Standort …");
@@ -158,7 +136,7 @@ locateBtn.addEventListener("click", () => {
   );
 });
 
-// --- Header: kompakt/expandierbar ---
+// Header-Toggle
 const headerToggle = document.getElementById("header-toggle");
 const BODY = document.body;
 const HDR_KEY = "my-map-header-condensed";
@@ -172,7 +150,6 @@ function setCondensed(on) {
   try { localStorage.setItem(HDR_KEY, on ? "1" : "0"); } catch {}
 }
 
-// Initialzustand laden
 try {
   const saved = localStorage.getItem(HDR_KEY);
   if (saved === "1") setCondensed(true);
@@ -185,7 +162,5 @@ if (headerToggle) {
   headerToggle.textContent = BODY.classList.contains("is-condensed") ? "▲" : "▼";
 }
 
-// Karte in Benutzung? -> automatisch komprimieren
 map.on("movestart", () => setCondensed(true));
-// Suche fokussiert? -> wieder expandieren
 input.addEventListener("focus", () => setCondensed(false));
