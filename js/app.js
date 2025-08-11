@@ -149,35 +149,5 @@ locateBtn.addEventListener("click", () => {
     },
     () => setStatus("Konnte Standort nicht bestimmen.")
   );
-  // === Leaflet-Offset an Header-Höhe anpassen ===
-const headerEl = document.querySelector(".site-header");
-
-function updateLeafletOffsets() {
-  if (!headerEl) return;
-  // Unterkante Header + kleiner Puffer
-  const offset = Math.round(headerEl.getBoundingClientRect().bottom) + 10;
-  document.documentElement.style.setProperty("--header-offset", offset + "px");
-}
-updateLeafletOffsets();
-
-// Bei wichtigen Ereignissen neu berechnen:
-window.addEventListener("resize", updateLeafletOffsets);
-window.addEventListener("orientationchange", updateLeafletOffsets);
-
-// Falls du die 'condensed'-Funktion aus vorherigem Schritt hast, hänge updateLeafletOffsets dort an:
-const _setCondensedOrig = typeof setCondensed === "function" ? setCondensed : null;
-if (_setCondensedOrig) {
-  window.setCondensed = function(on) {
-    _setCondensedOrig(on);
-    // Nach Layoutwechsel neu messen
-    requestAnimationFrame(updateLeafletOffsets);
-  };
-}
-
-// Wenn Fonts nachladen usw.
-document.fonts?.ready?.then(updateLeafletOffsets);
-
-// Beim ersten Render der Karte (falls Controls erst dann da sind)
-map.whenReady(updateLeafletOffsets);
-
+  
 });

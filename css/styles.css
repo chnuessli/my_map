@@ -1,18 +1,11 @@
 :root {
   --bg: #ffffff;
-  --fg: #0f172a;
-  --muted: #64748b;
-  --border: #e5e7eb;
-  --accent: #2563eb;
+  --fg: #0f172a;         /* slate-900 */
+  --muted: #64748b;      /* slate-500 */
+  --border: #e5e7eb;     /* gray-200 */
+  --accent: #2563eb;     /* blue-600 */
   --accent-fg: #ffffff;
-  --focus: 2px solid #60a5fa;
-
-  /* NEU: Oberflächen */
-  --hdr-bg: rgba(255,255,255,0.97);
-  --panel-bg: #ffffff;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
-  --shadow-md: 0 6px 20px rgba(0,0,0,.08);
-  --header-offset: 10px; /* wird per JS aktualisiert */
+  --focus: 2px solid #60a5fa; /* blue-400 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,91 +13,176 @@
     --bg: #0b0b0b;
     --fg: #e5e7eb;
     --muted: #9ca3af;
-    --border: #2a2a2a;
+    --border: #262626;
     --accent: #60a5fa;
     --accent-fg: #0b0b0b;
-
-    --hdr-bg: rgba(22,22,22,0.92);
-    --panel-bg: #141414; /* immer noch heller als Hintergrund -> Fokus auf Suche */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.3);
-    --shadow-md: 0 6px 20px rgba(0,0,0,.45);
+    --focus: 2px solid #93c5fd;
   }
 }
 
-/* Header deutlich heller + Schatten */
-.site-header {
-  position: sticky; top: 0; z-index: 1000;
-  display: grid; gap: .6rem;
-  padding: .75rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--hdr-bg);
-  backdrop-filter: saturate(180%) blur(8px);
-  box-shadow: var(--shadow-sm);
-  transition: padding .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-.brand { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.brand .title { margin: 0; font-size: clamp(1.15rem, 1rem + 1vw, 1.5rem); font-weight: 800; letter-spacing: -.01em; }
+/* Layout */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  gap: .5rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.85);
+  backdrop-filter: saturate(180%) blur(10px);
+}
+@media (prefers-color-scheme: dark) {
+  .site-header { background: rgba(15,15,15,.7); }
+}
 
-/* Suchleiste als „Card“ */
+.brand .title {
+  margin: 0 0 .25rem 0;
+  font-size: clamp(1.1rem, 1rem + 1vw, 1.4rem);
+  font-weight: 700;
+}
+
 .search {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: .5rem;
   align-items: center;
-
-  background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: .75rem;
-  padding: .55rem;
-  box-shadow: var(--shadow-md);
 }
 
-input[type="search"] {
+.status {
+  margin: .25rem 0 0 0;
+  color: var(--muted);
+  min-height: 1.25rem;
+}
+
+/* Map soll den restlichen Viewport füllen */
+#map {
   width: 100%;
-  padding: .7rem .9rem;
+  height: calc(100vh - 160px); /* grobe Header/Footer-Höhe */
+}
+@media (max-width: 640px) {
+  #map { height: calc(100vh - 200px); }
+}
+
+.site-footer {
+  padding: .75rem 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* Form Controls */
+input[type="search"] {
+  appearance: none;
+  width: 100%;
+  padding: .65rem .8rem;
   border: 1px solid var(--border);
   border-radius: .6rem;
-  background: #fff; /* bewusst hell, auch im Dark-Mode bleibt das Feld „aufmerksamkeitsstark“ */
-  color: #0f172a;
-  font-size: 1rem;
-  font-weight: 500;
+  background: var(--bg);
+  color: var(--fg);
 }
-input[type="search"]::placeholder { color: #94a3b8; }
+input[type="search"]::placeholder { color: var(--muted); }
 input[type="search"]:focus { outline: var(--focus); outline-offset: 2px; }
 
-.btn { padding: .65rem .85rem; border: 1px solid var(--border); background: var(--bg); color: var(--fg);
-  border-radius: .6rem; cursor: pointer; transition: border-color .15s ease, transform .05s ease;
-  font-weight: 600;
+.btn {
+  padding: .6rem .8rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: .6rem;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .05s ease;
+  touch-action: manipulation;
 }
-.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
-.btn.ghost { background: transparent; }
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn:focus { outline: var(--focus); outline-offset: 2px; }
 
-/* Kompaktmodus: bleibt hell, aber kleiner */
-body.is-condensed .site-header { padding: .4rem .75rem; }
-body.is-condensed .brand .title { font-size: 1.05rem; }
-body.is-condensed .search { padding: .4rem; gap: .4rem; box-shadow: var(--shadow-sm); }
-body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem .65rem; }
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: transparent;
+}
+.btn.primary:hover { filter: brightness(1.05); }
 
-/* Map-Höhen */
-#map { width: 100%; height: calc(100vh - 170px); }
-@media (max-width: 640px) { #map { height: calc(100vh - 210px); } }
-body.is-condensed #map { height: calc(100vh - 120px); }
-@media (max-width: 640px) { body.is-condensed #map { height: calc(100vh - 140px); } }
+/* A11y helpers */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
 
-/* Leaflet Controls: Abstand unter dem Header (wird per JS gesetzt) */
-.leaflet-top { top: var(--header-offset, 10px); }
-.leaflet-right { right: 10px; }
-.leaflet-left { left: 10px; }
-
-/* Attribution lesbarer */
-.leaflet-control-attribution { background: rgba(255,255,255,.9); }
+/* Leaflet UI leicht anpassen, ohne Stil zu brechen */
+.leaflet-control-container .leaflet-control {
+  font-size: 14px;
+}
+.leaflet-control-attribution {
+  background: rgba(255,255,255,.8);
+}
 @media (prefers-color-scheme: dark) {
-  .leaflet-control-attribution { background: rgba(20,20,20,.85); }
+  .leaflet-control-attribution { background: rgba(15,15,15,.7); color: var(--muted); }
 }
 
-/* Statuszeile dezenter */
-.status { margin: .25rem 0 0 0; color: var(--muted); min-height: 1.25rem; }
+/* MarkerCluster (optional, nur falls eingebunden) */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  text-shadow: 0 1px 0 rgba(0,0,0,.2);
+}
+/* Header Grundlayout */
+.site-header {
+  position: sticky; top: 0; z-index: 1000;
+  display: grid; gap: .5rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.85);
+  backdrop-filter: saturate(180%) blur(10px);
+  transition: padding .18s ease, border-color .18s ease;
+}
+@media (prefers-color-scheme: dark) {
+  .site-header { background: rgba(15,15,15,.7); }
+}
 
-/* A11y helpers unverändert */
-.visually-hidden { position: absolute !important; height:1px; width:1px; overflow:hidden; clip: rect(1px,1px,1px,1px); white-space:nowrap; border:0; padding:0; margin:-1px; }
+.brand {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+}
+.brand .title {
+  margin: 0; font-size: clamp(1.1rem, 1rem + 1vw, 1.4rem); font-weight: 700;
+}
+
+/* Toggle-Button dezenter Stil */
+.btn.ghost {
+  border: 1px solid var(--border);
+  background: transparent;
+  padding: .35rem .55rem;
+  border-radius: .5rem;
+  line-height: 1;
+}
+
+/* Kompaktzustand steuern über Klasse am BODY */
+body.is-condensed .site-header { padding: .35rem .75rem; }
+body.is-condensed .brand .title { font-size: 1rem; font-weight: 600; }
+body.is-condensed .status { display: none; }
+
+/* Im kompakten Modus: Suchleiste etwas dichter */
+body.is-condensed .search { gap: .35rem; }
+body.is-condensed input[type="search"] { padding: .5rem .65rem; }
+body.is-condensed .btn { padding: .5rem .65rem; }
+
+/* Map-Höhe: gewinnt etwas Platz im kompakten Modus */
+#map { width: 100%; height: calc(100vh - 160px); }
+@media (max-width: 640px) { #map { height: calc(100vh - 200px); } }
+
+body.is-condensed #map { height: calc(100vh - 110px); }
+@media (max-width: 640px) {
+  body.is-condensed #map { height: calc(100vh - 130px); }
+}
