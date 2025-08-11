@@ -138,3 +138,51 @@ input[type="search"]:focus { outline: var(--focus); outline-offset: 2px; }
 .marker-cluster-large {
   text-shadow: 0 1px 0 rgba(0,0,0,.2);
 }
+/* Header Grundlayout */
+.site-header {
+  position: sticky; top: 0; z-index: 1000;
+  display: grid; gap: .5rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.85);
+  backdrop-filter: saturate(180%) blur(10px);
+  transition: padding .18s ease, border-color .18s ease;
+}
+@media (prefers-color-scheme: dark) {
+  .site-header { background: rgba(15,15,15,.7); }
+}
+
+.brand {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+}
+.brand .title {
+  margin: 0; font-size: clamp(1.1rem, 1rem + 1vw, 1.4rem); font-weight: 700;
+}
+
+/* Toggle-Button dezenter Stil */
+.btn.ghost {
+  border: 1px solid var(--border);
+  background: transparent;
+  padding: .35rem .55rem;
+  border-radius: .5rem;
+  line-height: 1;
+}
+
+/* Kompaktzustand steuern über Klasse am BODY */
+body.is-condensed .site-header { padding: .35rem .75rem; }
+body.is-condensed .brand .title { font-size: 1rem; font-weight: 600; }
+body.is-condensed .status { display: none; }
+
+/* Im kompakten Modus: Suchleiste etwas dichter */
+body.is-condensed .search { gap: .35rem; }
+body.is-condensed input[type="search"] { padding: .5rem .65rem; }
+body.is-condensed .btn { padding: .5rem .65rem; }
+
+/* Map-Höhe: gewinnt etwas Platz im kompakten Modus */
+#map { width: 100%; height: calc(100vh - 160px); }
+@media (max-width: 640px) { #map { height: calc(100vh - 200px); } }
+
+body.is-condensed #map { height: calc(100vh - 110px); }
+@media (max-width: 640px) {
+  body.is-condensed #map { height: calc(100vh - 130px); }
+}
