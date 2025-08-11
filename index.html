@@ -30,15 +30,18 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <header class="site-header" data-collapsible>
-    <div class="brand">
-      <!-- Logo -->
-      <img
-        src="img/header.png"
-        srcset="img/header.png 2x"
-        alt="BASEFIVE MAP"
-        class="brand-logo"
-      />
+<header class="site-header" data-collapsible>
+  <div class="brand">
+    <!-- Textlogo statt Bild -->
+    <h1 class="brand-logo-txt" aria-label="BASEFIVE MAP">
+      <span class="logo-base">BASE</span><span class="logo-five">FIVE</span><span class="logo-map"> MAP</span>
+    </h1>
+
+    <button id="header-toggle" class="btn ghost" aria-expanded="true" aria-controls="search-form" title="Header ein-/ausklappen">
+      ▼
+    </button>
+  </div>
+
       <button id="header-toggle" class="btn ghost" aria-expanded="true" aria-controls="search-form" title="Header ein-/ausklappen">
         ▼
       </button>
