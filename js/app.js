@@ -4,79 +4,85 @@ const form = document.getElementById("search-form");
 const input = document.getElementById("search-input");
 const locateBtn = document.getElementById("locate-btn");
 
-// Map anlegen (ohne Basiskarte – die fügen wir gleich über baseLayers hinzu)
+// Karte anlegen (ohne Basiskarte – die kommt über baseLayers)
 const map = L.map("map", { zoomControl: true, center: [47.3769, 8.5417], zoom: 12 });
 
-// Helper zum Erstellen von Tile-Layern
+// Helper zum Erstellen von Tile-Layern (mit Retina-Defaults für @2x)
 function tl(url, opts = {}) {
+  const retina = url.includes("@2x");
   return L.tileLayer(url, {
-    maxZoom: 19,
+    maxZoom: 20,
     crossOrigin: true,
+    ...(retina ? { tileSize: 512, zoomOffset: -1 } : {}),
     ...opts,
   }).on("tileerror", () => {
-    // dezente Statusmeldung, falls ein Tile-Server hakt
     statusEl.textContent = "Hinweis: Kachelserver aktuell nicht erreichbar.";
   });
 }
 
-/**
- * >>> HIER DEINE 3 LAYER DEFINIEREN <<<
- * Tausche die URLs/Namen einfach gegen die aus deinem ursprünglichen Code.
- * Die drei Beispiele unten sind nur Platzhalter.
- */
+// Basiskarten definieren
 const baseLayers = {
   "OSM Standard": tl("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }),
+
   "OSM Bright": tl(
     "https://api.maptiler.com/maps/bright-v2/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
-      maxZoom: 20,
       attribution:
-        "Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }
   ),
-    "Swisstopo light": tl(
+
+  "Swisstopo light": tl(
     "https://api.maptiler.com/maps/ch-swisstopo-lbm/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
-      maxZoom: 20,
       attribution:
-        "Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a> ' +
+        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }
   ),
+
   "OpenTopoMap": tl("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
     maxZoom: 17,
     attribution:
-      'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tiles: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+      'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+      'SRTM | Map style &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
   }),
 };
 
 // Zuletzt verwendete Basiskarte merken
 const LS_KEY = "my-map-baselayer";
 const savedBase = localStorage.getItem(LS_KEY);
-const initialBaseName = savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
+const initialBaseName =
+  savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
 baseLayers[initialBaseName].addTo(map);
 
 // Wechsel speichern
 map.on("baselayerchange", (e) => {
   localStorage.setItem(LS_KEY, e.name);
-  statusEl.textContent = ""; // evtl. alte Tile-Fehlermeldung zurücksetzen
+  statusEl.textContent = ""; // alte Tile-Fehlermeldung zurücksetzen
 });
 
-// Overlays (Marker/Cluster etc.)
+// Marker-Layer
 const markers = L.markerClusterGroup ? L.markerClusterGroup() : L.layerGroup();
 map.addLayer(markers);
 
-// Layer-Control hinzufügen
-L.control.layers(baseLayers, { Marker: markers }, { position: "topright", collapsed: false }).addTo(map);
+// Layer-Control hinzufügen (mobil eingeklappt)
+const isMobile = matchMedia("(max-width: 768px)").matches;
+L.control.layers(baseLayers, { Marker: markers }, { position: "topright", collapsed: isMobile }).addTo(map);
 
-// ------- Der Rest deines Codes (Suche/Geolokalisierung) bleibt gleich -------
+// Maßstab hinzufügen
+L.control.scale({ imperial: false }).addTo(map);
 
-// Helper
+// Status-Helfer
 const setStatus = (msg) => (statusEl.textContent = msg || "");
 
-// Debounce
+// Debounce-Funktion
 let debounceTimer;
 const debounce = (fn, ms = 350) => (...args) => {
   clearTimeout(debounceTimer);
@@ -116,8 +122,8 @@ async function searchPlaces(query) {
   }
 }
 
-// Form
-document.getElementById("search-form").addEventListener("submit", (e) => {
+// Formular-Events
+form.addEventListener("submit", (e) => {
   e.preventDefault();
   searchPlaces(input.value.trim());
 });
@@ -130,7 +136,7 @@ input.addEventListener(
 );
 
 // Geolocation
-document.getElementById("locate-btn").addEventListener("click", () => {
+locateBtn.addEventListener("click", () => {
   if (!navigator.geolocation) return setStatus("Geolokalisierung nicht verfügbar.");
   setStatus("Bestimme Standort …");
   navigator.geolocation.getCurrentPosition(
