@@ -28,6 +28,7 @@ const baseLayers = {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }),
 
+  // MapTiler Bright (URL wie bei dir)
   "OSM Bright": tl(
     "https://api.maptiler.com/maps/bright-v2/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
@@ -37,6 +38,7 @@ const baseLayers = {
     }
   ),
 
+  // MapTiler SwissTopo Light (URL wie bei dir)
   "Swisstopo light": tl(
     "https://api.maptiler.com/maps/ch-swisstopo-lbm/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
@@ -73,8 +75,13 @@ const markers = L.markerClusterGroup ? L.markerClusterGroup() : L.layerGroup();
 map.addLayer(markers);
 
 // Layer-Control hinzufügen (mobil eingeklappt)
+// Hinweis: Abstände werden rein per CSS gesteuert (kein JS-Offset mehr nötig)
 const isMobile = matchMedia("(max-width: 768px)").matches;
-L.control.layers(baseLayers, { Marker: markers }, { position: "topright", collapsed: isMobile }).addTo(map);
+L.control.layers(
+  baseLayers,
+  { Marker: markers },
+  { position: "topright", collapsed: isMobile }
+).addTo(map);
 
 // Maßstab hinzufügen
 L.control.scale({ imperial: false }).addTo(map);
@@ -149,5 +156,36 @@ locateBtn.addEventListener("click", () => {
     },
     () => setStatus("Konnte Standort nicht bestimmen.")
   );
-  
 });
+
+// --- Header: kompakt/expandierbar ---
+const headerToggle = document.getElementById("header-toggle");
+const BODY = document.body;
+const HDR_KEY = "my-map-header-condensed";
+
+function setCondensed(on) {
+  BODY.classList.toggle("is-condensed", on);
+  if (headerToggle) {
+    headerToggle.setAttribute("aria-expanded", String(!on));
+    headerToggle.textContent = on ? "▲" : "▼";
+  }
+  try { localStorage.setItem(HDR_KEY, on ? "1" : "0"); } catch {}
+}
+
+// Initialzustand laden
+try {
+  const saved = localStorage.getItem(HDR_KEY);
+  if (saved === "1") setCondensed(true);
+} catch {}
+
+if (headerToggle) {
+  headerToggle.addEventListener("click", () => {
+    setCondensed(!BODY.classList.contains("is-condensed"));
+  });
+  headerToggle.textContent = BODY.classList.contains("is-condensed") ? "▲" : "▼";
+}
+
+// Karte in Benutzung? -> automatisch komprimieren
+map.on("movestart", () => setCondensed(true));
+// Suche fokussiert? -> wieder expandieren
+input.addEventListener("focus", () => setCondensed(false));
