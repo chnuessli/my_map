@@ -1,16 +1,16 @@
 :root {
   --bg: #ffffff;
-  --fg: #0f172a;
-  --muted: #64748b;
-  --border: #e5e7eb;
+  --fg: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #2a2a2a;
   --accent: #2563eb;
   --accent-fg: #ffffff;
   --focus: 2px solid #60a5fa;
 
-  --hdr-bg: rgba(255,255,255,0.97);
-  --panel-bg: #ffffff;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
-  --shadow-md: 0 6px 20px rgba(0,0,0,.08);
+  --hdr-bg: rgba(22,22,22,0.92);
+  --panel-bg: rgba(255,255,255,0.08); /* Heller abgesetzte Panels im Dark-Header */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.3);
+  --shadow-md: 0 6px 20px rgba(0,0,0,.45);
 
   /* Controls: fix dunkel */
   --ctl-radius: 12px;
@@ -61,7 +61,7 @@ main { flex: 1; min-height: 0; }
   line-height: 1;
 }
 
-/* Textlogo im Header (ohne Bild) */
+/* Textlogo im Header */
 .brand-logo-txt {
   margin: 0;
   line-height: 1;
@@ -71,7 +71,6 @@ main { flex: 1; min-height: 0; }
   letter-spacing: -0.02em;
   font-size: clamp(1.4rem, 1rem + 1.4vw, 2.2rem);
   display: flex; align-items: center;
-  /* leichter Kontur/Glow für Lesbarkeit auf wechselnden Karten */
   text-shadow: 0 1px 2px rgba(0,0,0,.4), 0 0 4px rgba(255,255,255,.08);
 }
 .brand-logo-txt .logo-base,
@@ -88,29 +87,29 @@ body.is-condensed .brand-logo-txt {
   gap: .5rem;
   align-items: center;
   background: var(--panel-bg);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: .75rem;
   padding: .55rem;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), var(--shadow-md);
 }
 input[type="search"] {
   width: 100%;
   padding: .7rem .9rem;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: .6rem;
-  background: #fff;
-  color: #0f172a;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
   font-size: 1rem;
   font-weight: 500;
 }
-input[type="search"]::placeholder { color: #94a3b8; }
+input[type="search"]::placeholder { color: rgba(255,255,255,0.6); }
 input[type="search"]:focus { outline: var(--focus); outline-offset: 2px; }
 
 .btn {
   padding: .65rem .85rem;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--fg);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.15);
+  color: #fff;
   border-radius: .6rem;
   cursor: pointer;
   font-weight: 600;
@@ -161,7 +160,7 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   width: var(--ctl-size); height: var(--ctl-size);
   border-radius: var(--ctl-radius);
   background: transparent !important;
-  background-image: none !important; /* Default-Icon ausblenden */
+  background-image: none !important;
   position: relative;
 }
 #map .leaflet-control-layers-toggle::before {
@@ -181,6 +180,13 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   box-shadow: var(--ctl-shadow) !important;
   color: #fff !important;
   padding: 8px 8px 10px 8px !important;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+#map .leaflet-control-layers.leaflet-control:has(.leaflet-control-layers-expanded) .leaflet-control-layers-expanded {
+  opacity: 1;
+  transform: translateY(0);
 }
 #map .leaflet-control-layers-list { margin: 4px 0 0 0; max-height: 280px; overflow: auto; }
 #map .leaflet-control-layers-separator { margin: 6px 0; border-top: 1px solid var(--ctl-border) !important; }
@@ -218,21 +224,7 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   white-space:nowrap; border:0; padding:0; margin:-1px;
 }
 
-/* ============ Layer-Control: sanftes Ein-/Ausblenden ============ */
-#map .leaflet-control-layers-expanded {
-  /* Startzustand, falls das Panel dynamisch eingeblendet wird */
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .18s ease, transform .18s ease;
-}
-/* Wenn Leaflet das Panel sichtbar macht, hängt es die Klasse .leaflet-control an den Container.
-   Wir nutzen :has(), damit der sichtbare Zustand smooth wird. */
-#map .leaflet-control-layers.leaflet-control:has(.leaflet-control-layers-expanded) .leaflet-control-layers-expanded {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Bewegungsreduktion respektieren */
+/* Bewegungsreduktion */
 @media (prefers-reduced-motion: reduce) {
   #map .leaflet-control-layers-expanded {
     transition: none;
@@ -240,19 +232,17 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   }
 }
 
-/* ============ Mobile: größere Touch-Targets & Abstände ============ */
+/* Mobile: größere Touch-Targets & Abstände */
 @media (max-width: 640px) {
-  :root { --ctl-size: 44px; } /* Zoom/Layers-Button größer */
+  :root { --ctl-size: 44px; }
   #map .leaflet-right { right: 10px; }
   #map .leaflet-left  { left: 10px; }
   #map .leaflet-top   { top: 10px !important; }
-
-  /* etwas mehr Innenabstand im expanded-Panel */
   #map .leaflet-control-layers-expanded { padding: 10px 10px 12px 10px !important; }
   #map .leaflet-control-layers label { padding: 8px 8px; }
 }
 
-/* ============ Fokus-Ringe klarer sichtbar (A11y) ============ */
+/* Fokus-Ringe */
 #map .leaflet-bar a:focus-visible,
 #map .leaflet-control-layers-toggle:focus-visible,
 #map .leaflet-control-layers input:focus-visible + span {
