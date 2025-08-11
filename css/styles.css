@@ -1,0 +1,20 @@
+:root {
+  --bg: #fff;
+  --fg: #111;
+  --muted: #6b7280;
+  --accent: #2563eb;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0b0b0b; --fg:#eaeaea; --muted:#9ca3af; --accent:#60a5fa; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--fg); }
+.site-header { display: grid; gap: .5rem; padding: 1rem; border-bottom: 1px solid #e5e7eb; }
+#map { width: 100%; height: calc(100vh - 140px); }
+form { display: flex; gap: .5rem; }
+input[type="search"] { flex: 1; padding: .6rem .7rem; border: 1px solid #d1d5db; border-radius: .6rem; }
+button { padding: .6rem .8rem; border: 1px solid #d1d5db; background: var(--bg); color: var(--fg); border-radius: .6rem; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+#status { color: var(--muted); min-height: 1.25rem; }
+footer { padding: .75rem 1rem; color: var(--muted); }
