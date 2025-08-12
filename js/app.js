@@ -592,3 +592,4 @@ map.on("click", async (e) => {
 
   enhancePopupWithWeather([lat, lng], popup);
 });
+    
