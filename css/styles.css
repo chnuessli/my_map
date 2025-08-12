@@ -179,7 +179,7 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   box-shadow: var(--ctl-shadow) !important;
   color: #fff !important;
   overflow: hidden;
-  z-index: 1100; /* falls andere Elemente darüber lagen */
+  z-index: 1100;
 }
 
 /* Zoom-Buttons */
@@ -200,23 +200,9 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
 #map .leaflet-bar a:active { transform: translateY(1px); }
 #map .leaflet-bar a:focus { outline: var(--focus); outline-offset: 2px; }
 
-/* Layers-Control (collapsed Button) */
+/* Layers-Control (collapsed Button aus) – Panel ist dauerhaft offen per JS */
 #map .leaflet-control-layers { padding: 0 !important; }
-#map .leaflet-control-layers-toggle {
-  width: var(--ctl-size); height: var(--ctl-size);
-  border-radius: var(--ctl-radius);
-  background: transparent !important;
-  background-image: none !important;
-  position: relative;
-  display: grid; place-items: center;
-}
-#map .leaflet-control-layers-toggle::before {
-  content: "☰";
-  font-size: 18px; font-weight: 700;
-  color: #fff; display: block;
-}
-#map .leaflet-control-layers-toggle:hover { background: var(--ctl-hover) !important; }
-#map .leaflet-control-layers-toggle:hover::before { color: var(--accent-fg); }
+#map .leaflet-control-layers-toggle { display: none !important; }
 
 /* Layers-Control (expanded Panel) */
 #map .leaflet-control-layers-expanded {
@@ -226,13 +212,6 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   box-shadow: var(--ctl-shadow) !important;
   color: #fff !important;
   padding: 8px 8px 10px 8px !important;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .18s ease, transform .18s ease;
-}
-#map .leaflet-control-layers.leaflet-control:has(.leaflet-control-layers-expanded) .leaflet-control-layers-expanded {
-  opacity: 1;
-  transform: translateY(0);
 }
 #map .leaflet-control-layers-list { margin: 4px 0 0 0; max-height: 280px; overflow: auto; }
 #map .leaflet-control-layers-separator { margin: 6px 0; border-top: 1px solid var(--ctl-border) !important; }
@@ -245,6 +224,50 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
 #map .leaflet-control-layers input[type="radio"],
 #map .leaflet-control-layers input[type="checkbox"] {
   width: 16px; height: 16px; accent-color: var(--accent);
+}
+
+/* Leaflet Popup – Dark Theme */
+.leaflet-popup-content-wrapper {
+  background: rgba(22,22,22,0.95);
+  color: #fff;
+  border: 1px solid var(--ctl-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.5);
+}
+.leaflet-popup-tip {
+  background: rgba(22,22,22,0.95);
+  border: 1px solid var(--ctl-border);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+}
+
+/* Popup-Inhalt komponiert */
+.popup {
+  display: grid;
+  gap: 4px;
+}
+.popup-header {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.popup-icn { text-align: center; }
+.popup-title {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.popup-sub {
+  font-size: .9rem;
+  opacity: .9;
+}
+.popup-note {
+  margin-top: 6px;
+  font-size: .8rem;
+  opacity: .7;
 }
 
 /* Attribution dunkel & lesbar */
@@ -297,39 +320,4 @@ body.is-condensed input[type="search"], body.is-condensed .btn { padding: .5rem 
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 8px;
-}
-
-/* Layers-Control sicher sichtbar halten */
-#map .leaflet-control-layers {
-  display: block !important;
-  visibility: visible !important;
-  z-index: 1200 !important; /* über anderen UI-Elementen */
-  padding: 0 !important;
-}
-
-/* Toggle-Button immer als Icon zeigen (auch ohne Leaflet-Sprite) */
-#map .leaflet-control-layers-toggle {
-  width: var(--ctl-size);
-  height: var(--ctl-size);
-  background-image: none !important; /* Sprite aus */
-  background: transparent !important;
-  display: grid !important;
-  place-items: center !important;
-}
-#map .leaflet-control-layers-toggle::before {
-  content: "☰";
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-}
-
-/* Für den Fall, dass irgendein Global-CSS Controls versteckt */
-#map .leaflet-control {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-/* Layers-Control immer offen: Toggle-Button verstecken */
-#map .leaflet-control-layers-toggle {
-  display: none !important;
 }

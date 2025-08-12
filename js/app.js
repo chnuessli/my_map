@@ -57,7 +57,6 @@ const savedBase = localStorage.getItem(LS_KEY);
 const initialBaseName =
   savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
 baseLayers[initialBaseName].addTo(map);
-
 map.on("baselayerchange", (e) => {
   localStorage.setItem(LS_KEY, e.name);
   statusEl.textContent = "";
@@ -113,11 +112,14 @@ const ICONS = {
   office: "🏛️",
 };
 
+function humanTypeLabel(cls, typ) {
+  const pretty = String(typ || "").replace(/_/g, " ");
+  return [cls, pretty].filter(Boolean).join(" · ");
+}
 function humanType(p) {
-  const cls = p.class || "";
-  const typ = p.type || "";
-  const pretty = typ.replace(/_/g, " ");
-  return `${cls}${pretty ? " · " + pretty : ""}`;
+  // Such-Resultate liefern meist 'class', Reverse liefert 'category'
+  const cls = p.class || p.category || "";
+  return humanTypeLabel(cls, p.type || "");
 }
 
 function clearResults() {
@@ -130,7 +132,9 @@ function renderResultItem(p, idx) {
   li.id = `search-opt-${idx}`;
   li.setAttribute("role", "option");
 
-  const iconChar = ICONS[p.class] || "📌";
+  const cls = p.class || p.category || "";
+  const iconChar = ICONS[cls] || "📌";
+
   const icn = document.createElement("span");
   icn.className = "srch-icn";
   icn.textContent = iconChar;
@@ -157,12 +161,21 @@ function showResults(items) {
 // Unterdrückung von Reverse-Geocoding direkt nach flyTo()
 let suppressNextReverse = false;
 
-// Ort auswählen: Marker setzen & zoomen
+// Ort auswählen: Marker setzen & zoomen (Popup mit schönem Layout)
 function selectPlace(p) {
   const lat = parseFloat(p.lat);
   const lon = parseFloat(p.lon);
   markers.clearLayers();
-  markers.addLayer(L.marker([lat, lon]).bindPopup(`<strong>${p.display_name}</strong>`));
+
+  const popupHTML = buildPopupHTML({
+    class: p.class || p.category,
+    type: p.type,
+    address: p.address || {},
+    display_name: p.display_name || "",
+    name: p.name || ""
+  }, { fromCache: false });
+
+  markers.addLayer(L.marker([lat, lon]).bindPopup(popupHTML, { autoPan: false }));
 
   suppressNextReverse = true;
   map.flyTo([lat, lon], 14, { duration: 0.8 });
@@ -299,7 +312,7 @@ if (headerToggle) {
 }
 
 /* =========================
-   Reverse-Geocoding (schnell + Cache)
+   Reverse-Geocoding (schnell + Cache + schönes Popup)
    ========================= */
 
 // Alte Click-Handler (falls vorhanden) entfernen, dann genau einen setzen
@@ -307,14 +320,9 @@ map.off("click");
 
 let reverseAbort = null;
 
-/** Mini-Cache für Reverse-Geocoding (≈50 m Raster)
- *  - key: gerundete Koordinaten
- *  - value: { data, t }
- *  - TTL: 24h
- *  - LRU-Limit: 200 Einträge
- */
+/** Mini-Cache für Reverse-Geocoding (≈50 m Raster) */
 const REV_TTL_MS = 24 * 60 * 60 * 1000;
-const REV_GRID = 0.0005; // ≈ 55 m bei mittleren Breiten
+const REV_GRID = 0.0005; // ≈ 55 m
 const REV_LRU_MAX = 200;
 const revCache = new Map();
 
@@ -322,7 +330,6 @@ function cacheKey(lat, lon) {
   const r = REV_GRID;
   const klat = Math.round(lat / r) * r;
   const klon = Math.round(lon / r) * r;
-  // fix auf 6 Nachkommastellen
   return `${klat.toFixed(6)},${klon.toFixed(6)}`;
 }
 function cacheGet(lat, lon) {
@@ -342,29 +349,44 @@ function cacheSet(lat, lon, data) {
   const k = cacheKey(lat, lon);
   if (revCache.has(k)) revCache.delete(k);
   revCache.set(k, { data, t: Date.now() });
-  // LRU trim
   if (revCache.size > REV_LRU_MAX) {
     const firstKey = revCache.keys().next().value;
     revCache.delete(firstKey);
   }
 }
 
-// Hübsches Address-Label, falls display_name fehlt
-function formatAddress(address = {}) {
-  const parts = [
-    address.road || address.pedestrian || address.cycleway || address.footway,
-    address.house_number,
-    address.postcode,
-    address.city || address.town || address.village || address.hamlet,
-    address.state,
-    address.country,
-  ].filter(Boolean);
-  return parts.join(", ");
+// Utility: sicheres HTML
+function escapeHTML(s = "") {
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// Adressbausteine
+function formatAddressLine(addr = {}) {
+  // Straße + Hausnummer
+  const road = addr.road || addr.pedestrian || addr.cycleway || addr.footway || addr.path || "";
+  const num  = addr.house_number || "";
+  return [road, num].filter(Boolean).join(" ").trim();
+}
+function formatLocality(addr = {}) {
+  // Feinere Ortsangaben zuerst
+  const hood = addr.neighbourhood || addr.suburb || addr.city_district || "";
+  const place =
+    addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || "";
+  const line1 = [addr.postcode, place].filter(Boolean).join(" ");
+  return [hood, line1, addr.country].filter(Boolean).join(", ");
+}
+
+// display_name in Titel/Untertitel splitten
+function splitDisplayName(display = "") {
+  const parts = String(display).split(",").map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return { title: "", subtitle: "" };
+  return { title: parts[0], subtitle: parts.slice(1).join(", ") };
 }
 
 // Schnellere Fallback-Reihenfolge (weniger Stufen)
 async function reverseLookup(lat, lon, signal) {
-  // Start „mittelfein“ statt extrem fein → weniger Requests
   const zooms = [16, 14, 12, 18, 10];
   for (const z of zooms) {
     const url = new URL("https://nominatim.openstreetmap.org/reverse");
@@ -400,6 +422,56 @@ function mapIsBusy() {
   return anim || dragging;
 }
 
+// Icon & Klasse bestimmen
+function getClass(obj = {}) {
+  return obj.class || obj.category || "";
+}
+function popupIconFor(obj = {}) {
+  const cls = getClass(obj);
+  return ICONS[cls] || "📌";
+}
+
+// Popup-Inhalt generieren — jetzt mit Hausnummer & POI-Badge
+function buildPopupHTML(data, meta = { fromCache: false }) {
+  const icon = popupIconFor(data);
+  const addr = data.address || {};
+  const display = data.display_name || "";
+  const cls = getClass(data);
+  const typ = data.type || "";
+
+  // POI-Name? → als Titel
+  const addrLine = formatAddressLine(addr); // Straße + Nr
+  const name = data.name && String(data.name).trim();
+  let title = name || addrLine;
+
+  // Untertitel: Locality-Linie (PLZ Ort, Land), falls vorhanden
+  let subtitle = formatLocality(addr);
+
+  // Wenn uns etwas fehlt, aus display_name splitten
+  if (!title || !subtitle) {
+    const { title: t2, subtitle: s2 } = splitDisplayName(display);
+    if (!title) title = t2;
+    if (!subtitle) subtitle = s2;
+  }
+  // Harte Fallbacks
+  if (!title && display) title = display;
+  if (!subtitle && display) subtitle = display;
+
+  // Badge (Kategorie/Typ) – z. B. "amenity · restaurant"
+  const badge = humanTypeLabel(cls, typ);
+
+  return `
+    <div class="popup">
+      <div class="popup-header">
+        <div class="popup-icn">${icon}</div>
+        <div class="popup-title">${escapeHTML(title || "Adresse")}</div>
+      </div>
+      <div class="popup-sub">${escapeHTML(subtitle || "")}</div>
+      ${badge ? `<div class="popup-note">${escapeHTML(badge)} · Quelle: Nominatim${meta.fromCache ? " · aus Cache" : ""}</div>` : `<div class="popup-note">Quelle: Nominatim${meta.fromCache ? " · aus Cache" : ""}</div>`}
+    </div>
+  `;
+}
+
 map.on("click", async (e) => {
   const oe = e.originalEvent;
 
@@ -419,17 +491,11 @@ map.on("click", async (e) => {
 
   const { lat, lng } = e.latlng;
 
-  // 1) Cache-Hit? → sofort Popup ohne Netz
+  // 1) Cache-Hit?
   const cached = cacheGet(lat, lng);
   if (cached) {
-    const address =
-      cached.display_name ||
-      (cached.address ? formatAddress(cached.address) : "Adresse gefunden");
-
-    L.popup({ autoPan: false })
-      .setLatLng([lat, lng])
-      .setContent(`<strong>${address}</strong><div style="opacity:.7;font-size:.85em;margin-top:4px">aus Cache</div>`)
-      .openOn(map);
+    const html = buildPopupHTML(cached, { fromCache: true });
+    L.popup({ autoPan: false }).setLatLng([lat, lng]).setContent(html).openOn(map);
     setStatus("");
     return;
   }
@@ -445,25 +511,22 @@ map.on("click", async (e) => {
 
     if (!data) {
       setStatus("Hier wurde keine Adresse gefunden.");
-      cacheSet(lat, lng, { address: null, display_name: null }); // auch „leer“ cachen
-      L.popup({ autoPan: false })
-        .setLatLng([lat, lng])
-        .setContent(`<strong>Kein Adress-Treffer</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`)
-        .openOn(map);
+      const html = `
+        <div class="popup">
+          <div class="popup-header">
+            <div class="popup-icn">📌</div>
+            <div class="popup-title">Kein Adress-Treffer</div>
+          </div>
+          <div class="popup-sub">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+          <div class="popup-note">Quelle: Nominatim</div>
+        </div>`;
+      L.popup({ autoPan: false }).setLatLng([lat, lng]).setContent(html).openOn(map);
       return;
     }
 
     cacheSet(lat, lng, data);
-
-    const address =
-      data.display_name ||
-      (data.address ? formatAddress(data.address) : "Adresse gefunden");
-
-    L.popup({ autoPan: false })
-      .setLatLng([lat, lng])
-      .setContent(`<strong>${address}</strong>`)
-      .openOn(map);
-
+    const html = buildPopupHTML(data, { fromCache: false });
+    L.popup({ autoPan: false }).setLatLng([lat, lng]).setContent(html).openOn(map);
     setStatus("");
   } catch (err) {
     if (err.name === "AbortError") return;
