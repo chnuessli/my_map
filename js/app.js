@@ -25,33 +25,39 @@ function tl(url, opts = {}) {
 const baseLayers = {
   "OSM Standard": tl("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }),
   "OSM Bright": tl(
     "https://api.maptiler.com/maps/bright-v2/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
-      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
-                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution:
+        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }
   ),
   "Swisstopo light": tl(
     "https://api.maptiler.com/maps/ch-swisstopo-lbm/256/{z}/{x}/{y}@2x.png?key=62fWxjuKZdoP6vlFjq0a",
     {
-      attribution: '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a> ' +
-                   '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+      attribution:
+        '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a> ' +
+        '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
     }
   ),
   "OpenTopoMap": tl("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
     maxZoom: 17,
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution:
+      'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }),
 };
 
-// Base-Layer merken
+// Zuletzt verwendete Basiskarte merken
 const LS_KEY = "my-map-baselayer";
 const savedBase = localStorage.getItem(LS_KEY);
-const initialBaseName = savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
+const initialBaseName =
+  savedBase && baseLayers[savedBase] ? savedBase : Object.keys(baseLayers)[0];
 baseLayers[initialBaseName].addTo(map);
+
 map.on("baselayerchange", (e) => {
   localStorage.setItem(LS_KEY, e.name);
   statusEl.textContent = "";
@@ -61,12 +67,23 @@ map.on("baselayerchange", (e) => {
 const markers = L.markerClusterGroup ? L.markerClusterGroup() : L.layerGroup();
 map.addLayer(markers);
 
-// Layer-Control
-const isMobile = matchMedia("(max-width: 768px)").matches;
+// Layer-Control (ohne Hamburger → immer offen)
 L.control.layers(baseLayers, { Marker: markers }, { position: "topright", collapsed: false }).addTo(map);
 
 // Maßstab
 L.control.scale({ imperial: false }).addTo(map);
+
+// ---- UI-Events dürfen nicht auf die Karte „durchschlagen“ ----
+(function preventUiPropagation() {
+  const uiSelectors = [".site-header", ".search", "#search-results", ".leaflet-control-container"];
+  uiSelectors.forEach((sel) => {
+    const el = document.querySelector(sel);
+    if (el && L && L.DomEvent) {
+      L.DomEvent.disableClickPropagation(el);
+      L.DomEvent.disableScrollPropagation(el);
+    }
+  });
+})();
 
 // Status-Helfer
 const setStatus = (msg) => (statusEl.textContent = msg || "");
@@ -99,7 +116,6 @@ const ICONS = {
 function humanType(p) {
   const cls = p.class || "";
   const typ = p.type || "";
-  // kleine Aufhübschung
   const pretty = typ.replace(/_/g, " ");
   return `${cls}${pretty ? " · " + pretty : ""}`;
 }
@@ -138,12 +154,20 @@ function showResults(items) {
   input.setAttribute("aria-expanded", "true");
 }
 
+// Unterdrückung von Reverse-Geocoding direkt nach flyTo()
+let suppressNextReverse = false;
+
+// Ort auswählen: Marker setzen & zoomen
 function selectPlace(p) {
   const lat = parseFloat(p.lat);
   const lon = parseFloat(p.lon);
   markers.clearLayers();
   markers.addLayer(L.marker([lat, lon]).bindPopup(`<strong>${p.display_name}</strong>`));
+
+  suppressNextReverse = true;
   map.flyTo([lat, lon], 14, { duration: 0.8 });
+  setTimeout(() => (suppressNextReverse = false), 300);
+
   setStatus("");
   clearResults();
 }
@@ -177,16 +201,12 @@ async function searchPlaces(query) {
   }
 }
 
-// Form & Input
+// Formular & Input
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const q = input.value.trim();
   const first = resultsList.querySelector("li");
-  if (first) {
-    first.click();
-  } else {
-    searchPlaces(q);
-  }
+  if (first) first.click();
+  else searchPlaces(input.value.trim());
 });
 
 input.addEventListener(
@@ -198,7 +218,7 @@ input.addEventListener(
   }, 350)
 );
 
-// Keyboard-Navigation
+// Tastaturnavigation im Dropdown
 input.addEventListener("keydown", (e) => {
   const items = Array.from(resultsList.querySelectorAll("li"));
   if (!items.length) return;
@@ -241,14 +261,18 @@ locateBtn.addEventListener("click", () => {
       const { latitude, longitude } = pos.coords;
       const here = L.marker([latitude, longitude]).bindPopup("Du bist hier");
       markers.addLayer(here);
+
+      suppressNextReverse = true;
       map.flyTo([latitude, longitude], 15, { duration: 0.6 });
+      setTimeout(() => (suppressNextReverse = false), 300);
+
       setStatus("");
     },
     () => setStatus("Konnte Standort nicht bestimmen.")
   );
 });
 
-// Header-Toggle
+// --- Header: kompakt/expandierbar ---
 const headerToggle = document.getElementById("header-toggle");
 const BODY = document.body;
 const HDR_KEY = "my-map-header-condensed";
@@ -274,6 +298,176 @@ if (headerToggle) {
   headerToggle.textContent = BODY.classList.contains("is-condensed") ? "▲" : "▼";
 }
 
-// Auto-kondensieren bei Kartennutzung; expandieren beim Fokus auf Suche
-map.on("movestart", () => setCondensed(true));
-input.addEventListener("focus", () => setCondensed(false));
+/* =========================
+   Reverse-Geocoding (schnell + Cache)
+   ========================= */
+
+// Alte Click-Handler (falls vorhanden) entfernen, dann genau einen setzen
+map.off("click");
+
+let reverseAbort = null;
+
+/** Mini-Cache für Reverse-Geocoding (≈50 m Raster)
+ *  - key: gerundete Koordinaten
+ *  - value: { data, t }
+ *  - TTL: 24h
+ *  - LRU-Limit: 200 Einträge
+ */
+const REV_TTL_MS = 24 * 60 * 60 * 1000;
+const REV_GRID = 0.0005; // ≈ 55 m bei mittleren Breiten
+const REV_LRU_MAX = 200;
+const revCache = new Map();
+
+function cacheKey(lat, lon) {
+  const r = REV_GRID;
+  const klat = Math.round(lat / r) * r;
+  const klon = Math.round(lon / r) * r;
+  // fix auf 6 Nachkommastellen
+  return `${klat.toFixed(6)},${klon.toFixed(6)}`;
+}
+function cacheGet(lat, lon) {
+  const k = cacheKey(lat, lon);
+  const v = revCache.get(k);
+  if (!v) return null;
+  if (Date.now() - v.t > REV_TTL_MS) {
+    revCache.delete(k);
+    return null;
+  }
+  // LRU bump
+  revCache.delete(k);
+  revCache.set(k, v);
+  return v.data;
+}
+function cacheSet(lat, lon, data) {
+  const k = cacheKey(lat, lon);
+  if (revCache.has(k)) revCache.delete(k);
+  revCache.set(k, { data, t: Date.now() });
+  // LRU trim
+  if (revCache.size > REV_LRU_MAX) {
+    const firstKey = revCache.keys().next().value;
+    revCache.delete(firstKey);
+  }
+}
+
+// Hübsches Address-Label, falls display_name fehlt
+function formatAddress(address = {}) {
+  const parts = [
+    address.road || address.pedestrian || address.cycleway || address.footway,
+    address.house_number,
+    address.postcode,
+    address.city || address.town || address.village || address.hamlet,
+    address.state,
+    address.country,
+  ].filter(Boolean);
+  return parts.join(", ");
+}
+
+// Schnellere Fallback-Reihenfolge (weniger Stufen)
+async function reverseLookup(lat, lon, signal) {
+  // Start „mittelfein“ statt extrem fein → weniger Requests
+  const zooms = [16, 14, 12, 18, 10];
+  for (const z of zooms) {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("lat", lat);
+    url.searchParams.set("lon", lon);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("addressdetails", "1");
+    url.searchParams.set("zoom", String(z));
+
+    const res = await fetch(url.toString(), {
+      headers: { "Accept-Language": "de" },
+      signal,
+    });
+
+    if (!res.ok) {
+      if (res.status === 429) throw new Error("Rate limit (429)");
+      continue;
+    }
+    const data = await res.json();
+    if (!data || data.error) continue;
+
+    const hasDisplay = !!data.display_name;
+    const hasAddress = data.address && Object.keys(data.address).length > 0;
+    if (hasDisplay || hasAddress) return data;
+  }
+  return null;
+}
+
+// Leaflet-Status: animiert oder dragging?
+function mapIsBusy() {
+  const anim = map._animating === true;
+  const dragging = !!(map.dragging && map.dragging._draggable && map.dragging._draggable._moving);
+  return anim || dragging;
+}
+
+map.on("click", async (e) => {
+  const oe = e.originalEvent;
+
+  // Nicht während Animation/Drag oder direkt nach programmatischem flyTo
+  if (mapIsBusy() || suppressNextReverse) return;
+
+  // UI-Klicks ignorieren
+  if (oe && oe.target && (
+      oe.target.closest(".leaflet-control") ||
+      oe.target.closest(".search") ||
+      oe.target.closest("#search-results") ||
+      oe.target.closest(".site-header")
+    )) return;
+
+  // Nur linke Maustaste (Touch ok)
+  if (oe && typeof oe.button === "number" && oe.button !== 0) return;
+
+  const { lat, lng } = e.latlng;
+
+  // 1) Cache-Hit? → sofort Popup ohne Netz
+  const cached = cacheGet(lat, lng);
+  if (cached) {
+    const address =
+      cached.display_name ||
+      (cached.address ? formatAddress(cached.address) : "Adresse gefunden");
+
+    L.popup({ autoPan: false })
+      .setLatLng([lat, lng])
+      .setContent(`<strong>${address}</strong><div style="opacity:.7;font-size:.85em;margin-top:4px">aus Cache</div>`)
+      .openOn(map);
+    setStatus("");
+    return;
+  }
+
+  // 2) Netzabfrage (laufende abbrechen)
+  try { reverseAbort?.abort(); } catch {}
+  reverseAbort = new AbortController();
+
+  setStatus("Lade Adresse …");
+
+  try {
+    const data = await reverseLookup(lat, lng, reverseAbort.signal);
+
+    if (!data) {
+      setStatus("Hier wurde keine Adresse gefunden.");
+      cacheSet(lat, lng, { address: null, display_name: null }); // auch „leer“ cachen
+      L.popup({ autoPan: false })
+        .setLatLng([lat, lng])
+        .setContent(`<strong>Kein Adress-Treffer</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+        .openOn(map);
+      return;
+    }
+
+    cacheSet(lat, lng, data);
+
+    const address =
+      data.display_name ||
+      (data.address ? formatAddress(data.address) : "Adresse gefunden");
+
+    L.popup({ autoPan: false })
+      .setLatLng([lat, lng])
+      .setContent(`<strong>${address}</strong>`)
+      .openOn(map);
+
+    setStatus("");
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    console.error(err);
+    setStatus(err.message.includes("429") ? "Zu viele Anfragen – kurz warten." : "Adresse konnte nicht ermittelt werden.");
+  }
+});
